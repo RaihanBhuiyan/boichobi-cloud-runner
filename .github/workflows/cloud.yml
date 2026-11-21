@@ -22,7 +22,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 200
     env:
       TZ: Asia/Dhaka
       HF_HUB_DISABLE_PROGRESS_BARS: "1"
@@ -50,6 +50,7 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-core >/dev/null
           pip install -q "kaggle>=1.8" pillow numpy
+          npm i -g @google/gemini-cli >/dev/null 2>&1 || echo "gemini-cli ইনস্টল ব্যর্থ — টেক্সট-Gemini পথে চলবে"
       - if: steps.gate.outputs.run == '1'
         working-directory: proj
         run: python scripts/cloud_tick.py
