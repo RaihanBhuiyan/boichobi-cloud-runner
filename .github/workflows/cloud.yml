@@ -1,0 +1,52 @@
+name: cloud-assistant
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      simulate:
+        description: "পরীক্ষা: কিছু বদলায় না, শুধু Telegram-এ দেখায়"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: cloud-assistant
+  cancel-in-progress: false
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      TZ: Asia/Dhaka
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+      HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      SIMULATE: ${{ inputs.simulate && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -q "huggingface_hub>=0.26" requests
+      - id: gate
+        run: python gate.py
+      - if: steps.gate.outputs.run == '1'
+        uses: actions/checkout@v4
+        with:
+          repository: RaihanBhuiyan/boier-golpo
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          path: proj
+          fetch-depth: 1
+      - if: steps.gate.outputs.run == '1'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+      - if: steps.gate.outputs.run == '1'
+        working-directory: proj
+        run: python scripts/cloud_tick.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
