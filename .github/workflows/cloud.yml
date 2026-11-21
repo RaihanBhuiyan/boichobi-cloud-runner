@@ -15,6 +15,7 @@ on:
         default: false
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: cloud-assistant
   cancel-in-progress: false
@@ -57,3 +58,12 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
+      - name: পরের রান ডাকা (চেইন; সময়সূচি না চললেও সহকারী জেগে থাকে, একসাথে একটাই)
+        if: always() && inputs.simulate != true && inputs.test_state != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep $([ "${{ steps.gate.outputs.run }}" = "1" ] && echo 30 || echo 240)
+          n=$(gh run list -R "$GITHUB_REPOSITORY" -w cloud.yml --limit 20 --json status -q '[.[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length')
+          echo "অপেক্ষমাণ রান: $n"
+          [ "$n" = "0" ] && gh workflow run cloud.yml -R "$GITHUB_REPOSITORY" || true
