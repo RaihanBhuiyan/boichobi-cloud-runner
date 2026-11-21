@@ -8,6 +8,10 @@ on:
         description: "পরীক্ষা: কিছু বদলায় না, শুধু Telegram-এ দেখায়"
         type: boolean
         default: false
+      test_state:
+        description: "পরীক্ষা-ঘর (আসল স্টেট নয়): পুরো পিসি-অফ পথ"
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -23,6 +27,8 @@ jobs:
       HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       SIMULATE: ${{ inputs.simulate && '1' || '0' }}
+      CLOUD_TEST: ${{ inputs.test_state && '1' || '0' }}
+      CLOUD_STATE_REPO: ${{ inputs.test_state && 'raihanaal2/boichobi-cloud-state-test' || 'raihanaal2/boichobi-cloud-state' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
