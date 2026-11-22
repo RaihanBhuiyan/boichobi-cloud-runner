@@ -53,8 +53,15 @@ jobs:
           npm i -g @google/gemini-cli >/dev/null 2>&1 || echo "gemini-cli ইনস্টল ব্যর্থ — টেক্সট-Gemini পথে চলবে"
           npm i -g @anthropic-ai/claude-code >/dev/null 2>&1 || echo "claude-code ইনস্টল ব্যর্থ — Gemini পথে চলবে"
       - if: steps.gate.outputs.run == '1'
+        # ২০২৬-১১-২২: প্রজেক্ট বড় হচ্ছে — নামানো ফাইল রান থেকে রানে ক্যাশে থাকে, শুধু বদলানোটা নামে
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/boichobi-media
+          key: media-${{ github.run_id }}
+          restore-keys: media-
+      - if: steps.gate.outputs.run == '1'
         working-directory: proj
-        run: python scripts/cloud_tick.py
+        run: CLOUD_MEDIA_CACHE=$HOME/.cache/boichobi-media python scripts/cloud_tick.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
