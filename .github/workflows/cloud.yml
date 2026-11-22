@@ -83,6 +83,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sleep $([ "${{ steps.gate.outputs.run }}" = "1" ] && echo 30 || echo 240)
+          sleep $([ "${{ steps.gate.outputs.run }}" = "1" ] && echo 30 || echo 90)
           for i in 1 2 3; do gh workflow run cloud.yml -R "$GITHUB_REPOSITORY" && { echo "পরের রান ডাকা ✔"; exit 0; }; sleep 20; done
           echo "::warning::পরের রান ডাকা যায়নি — সময়সূচির ভরসা"

@@ -12,7 +12,7 @@ def rd(p, d):
         return d
 hb = rd("heartbeat.json", {}) or {}; ls = rd("lease.json", {}) or {}
 age = (time.time() - hb.get("t", 0)) / 60
-run = os.environ.get("SIMULATE") == "1" or age > 20 or (ls.get("owner") == "cloud")
+run = os.environ.get("SIMULATE") == "1" or age > 7 or (ls.get("owner") == "cloud")
 print(f"পিসির সংকেত {age:.0f} মিনিট আগে · চাবি {ls.get('owner', 'pc')} → {'চালাও' if run else 'চুপ'}")
 with open(os.environ.get("GITHUB_OUTPUT", "/dev/null"), "a") as f:
     f.write(f"run={'1' if run else '0'}\n")
