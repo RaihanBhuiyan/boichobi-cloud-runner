@@ -76,11 +76,13 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
       - name: পরের রান ডাকা (চেইন; সময়সূচি না চললেও সহকারী জেগে থাকে, একসাথে একটাই)
-        if: always() && inputs.simulate != true && inputs.test_state != true
+        # ২০২৬-১১-২২ ফিক্স: আগে "অপেক্ষমাণ রান আছে" দেখলে ডাকত না — কিন্তু concurrency সেই অপেক্ষমাণ রান পরে বাতিল করে দিলে চেইন মরে যেত
+        # (১৩:২৪-এর পর ৪ ঘণ্টা কিছু চলেনি)। এখন সবসময় ডাকে: concurrency একসাথে ১টা চলমান + ১টা অপেক্ষমাণ রাখে, নতুনটা পুরনো অপেক্ষমাণকে বদলায় —
+        # তাই ডুপ্লিকেট হয় না, চেইনও ভাঙে না। simulate-রানের পরেও ডাকে (হাতে পরীক্ষা করলে চেইন যেন না থামে); শুধু test_state-এ নয়।
+        if: always() && inputs.test_state != true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sleep $([ "${{ steps.gate.outputs.run }}" = "1" ] && echo 30 || echo 240)
-          n=$(gh run list -R "$GITHUB_REPOSITORY" -w cloud.yml --limit 20 --json status -q '[.[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length')
-          echo "অপেক্ষমাণ রান: $n"
-          [ "$n" = "0" ] && gh workflow run cloud.yml -R "$GITHUB_REPOSITORY" || true
+          for i in 1 2 3; do gh workflow run cloud.yml -R "$GITHUB_REPOSITORY" && { echo "পরের রান ডাকা ✔"; exit 0; }; sleep 20; done
+          echo "::warning::পরের রান ডাকা যায়নি — সময়সূচির ভরসা"
