@@ -51,6 +51,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-core >/dev/null
           pip install -q "kaggle>=1.8" pillow numpy
           npm i -g @google/gemini-cli >/dev/null 2>&1 || echo "gemini-cli ইনস্টল ব্যর্থ — টেক্সট-Gemini পথে চলবে"
+          npm i -g @anthropic-ai/claude-code >/dev/null 2>&1 || echo "claude-code ইনস্টল ব্যর্থ — Gemini পথে চলবে"
       - if: steps.gate.outputs.run == '1'
         working-directory: proj
         run: python scripts/cloud_tick.py
@@ -70,6 +71,7 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
