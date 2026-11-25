@@ -49,12 +49,18 @@ def files(focus):
     a, out = HfApi(token=TOK), []
     m = re.match(r"^himu-next-(\d+)$", focus)
     pj = f"next{m.group(1)}" if m else focus
-    for tag, repo, roots in (("s", REPO, [f"snap/jobs/{focus}"]), ("m", MEDIA, [f"jobs/{focus}", f"pub/{focus}", f"proj/{pj}"])):
+    projs = [f"proj/{pj}"]
+    try:   # প্রজেক্ট-ফোল্ডারের নাম next8_v6-এর মতোও হয় → proj/-এর যে ফোল্ডার pj দিয়ে শুরু (আর ঠিক তার পরে অঙ্ক নয়) সব
+        projs = [f.path for f in a.list_repo_tree(MEDIA, "proj", repo_type="dataset", recursive=False)
+                 if getattr(f, "size", None) is None and re.match(rf"^proj/{re.escape(pj)}(?!\d)", f.path)] or projs
+    except Exception:
+        pass
+    for tag, repo, roots in (("s", REPO, [f"snap/jobs/{focus}"]), ("m", MEDIA, [f"jobs/{focus}", f"pub/{focus}"] + projs[-3:])):
         for root in roots:
             try:
                 for f in a.list_repo_tree(repo, root, repo_type="dataset", recursive=True):
                     sz = getattr(f, "size", None)
-                    if sz is None or "/node_modules/" in f.path or "/.locks/" in f.path:
+                    if sz is None or "/node_modules/" in f.path or "/.locks/" in f.path or "/lib/" in f.path or "/assets/" in f.path or "/gen/" in f.path:
                         continue
                     out.append([tag, TOKEN_RE.sub("•••", f.path)[:200], int(sz)])
             except Exception:
