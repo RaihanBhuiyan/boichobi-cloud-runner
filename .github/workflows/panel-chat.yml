@@ -1,0 +1,69 @@
+name: panel-chat
+# প্যানেলের চ্যাট (Owner ২০২৬-১১-২৫): প্রশ্ন private boier-golpo-র `panel` ব্রাঞ্চে; উত্তর এনক্রিপ্ট হয়ে `chat` ব্রাঞ্চে।
+# আলাদা concurrency — লম্বা বিল্ড চললেও চ্যাট অপেক্ষা করে না। ইনপুটে শুধু থ্রেড-আইডি (লেখা নয়) — পাবলিক লগে কথা যায় না।
+on:
+  workflow_dispatch:
+    inputs:
+      thread:
+        description: "থ্রেড-আইডি"
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: panel-chat
+  cancel-in-progress: false
+jobs:
+  answer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      TZ: Asia/Dhaka
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+      HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      CHAT_THREAD: ${{ inputs.thread }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -q "huggingface_hub>=0.26" requests cryptography
+      - uses: actions/checkout@v4
+        with:
+          repository: RaihanBhuiyan/boier-golpo
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          path: proj
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts
+            config
+            docs/tech-manager
+      - uses: actions/checkout@v4
+        with:
+          repository: RaihanBhuiyan/boier-golpo
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          ref: panel
+          path: pnl
+          fetch-depth: 1
+          sparse-checkout: panel
+      - name: অবস্থা
+        continue-on-error: true
+        run: python status.py > /tmp/status.json
+      - name: উত্তর
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
+          GEMINI_API_KEY_4: ${{ secrets.GEMINI_API_KEY_4 }}
+          GEMINI_API_KEY_5: ${{ secrets.GEMINI_API_KEY_5 }}
+          GEMINI_API_KEY_6: ${{ secrets.GEMINI_API_KEY_6 }}
+          GEMINI_API_KEY_7: ${{ secrets.GEMINI_API_KEY_7 }}
+          GEMINI_API_KEY_8: ${{ secrets.GEMINI_API_KEY_8 }}
+        run: python chat.py
+      - name: উত্তর পাঠানো
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash push_chat.sh
