@@ -14,7 +14,7 @@ on:
         type: boolean
         default: false
 permissions:
-  contents: read
+  contents: write   # ২০২৬-১১-২৫: শুধু `status` ব্রাঞ্চে status.json রাখতে (প্যানেল পড়ে)
   actions: write
 concurrency:
   group: cloud-assistant
@@ -39,6 +39,13 @@ jobs:
       - run: pip install -q "huggingface_hub>=0.26" requests
       - id: gate
         run: python gate.py
+      - name: প্যানেলের অবস্থা-ফাইল (শুরুতে)
+        # Owner ২০২৬-১১-২৫: প্যানেলে আলাদা চাবি নয় — লাইনের অবস্থা (ধাপ, ব্লকার, কোটার সংখ্যা; কোনো চাবি নয়) `status` ব্রাঞ্চে, প্যানেল সেটা পড়ে
+        if: inputs.test_state != true
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash push_status.sh
       - if: steps.gate.outputs.run == '1'
         uses: actions/checkout@v4
         with:
@@ -89,6 +96,12 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
+      - name: প্যানেলের অবস্থা-ফাইল (শেষে)
+        if: always() && inputs.test_state != true
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash push_status.sh
       - name: পরের রান ডাকা (চেইন; সময়সূচি না চললেও সহকারী জেগে থাকে, একসাথে একটাই)
         # ২০২৬-১১-২২ ফিক্স: আগে "অপেক্ষমাণ রান আছে" দেখলে ডাকত না — কিন্তু concurrency সেই অপেক্ষমাণ রান পরে বাতিল করে দিলে চেইন মরে যেত
         # (১৩:২৪-এর পর ৪ ঘণ্টা কিছু চলেনি)। এখন সবসময় ডাকে: concurrency একসাথে ১টা চলমান + ১টা অপেক্ষমাণ রাখে, নতুনটা পুরনো অপেক্ষমাণকে বদলায় —
