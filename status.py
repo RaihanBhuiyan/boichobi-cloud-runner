@@ -36,6 +36,32 @@ def pick(d, keys):
     return {k: d[k] for k in keys if isinstance(d, dict) and k in d}
 
 
+MEDIA = os.environ.get("CLOUD_MEDIA_REPO", "raihanaal2/boichobi-cloud-media")
+TOKEN_RE = re.compile(r"AIza[0-9A-Za-z_\-]{10,}|hf_[A-Za-z0-9]{10,}|sk-[A-Za-z0-9_\-]{10,}|gh[pousr]_[A-Za-z0-9]{10,}")
+
+
+def files(focus):
+    """চলতি গল্পের তৈরি ফাইলের তালিকা (শুধু নাম+মাপ; ফাইল নিজে private-ই থাকে) — প্যানেল ধাপের পাশে লিংক দেখায়।
+    [[ঘর, পথ, বাইট]] · ঘর s = স্টেট-ঘর, m = মিডিয়া-ঘর।"""
+    if not focus:
+        return []
+    from huggingface_hub import HfApi
+    a, out = HfApi(token=TOK), []
+    m = re.match(r"^himu-next-(\d+)$", focus)
+    pj = f"next{m.group(1)}" if m else focus
+    for tag, repo, roots in (("s", REPO, [f"snap/jobs/{focus}"]), ("m", MEDIA, [f"jobs/{focus}", f"pub/{focus}", f"proj/{pj}"])):
+        for root in roots:
+            try:
+                for f in a.list_repo_tree(repo, root, repo_type="dataset", recursive=True):
+                    sz = getattr(f, "size", None)
+                    if sz is None or "/node_modules/" in f.path or "/.locks/" in f.path:
+                        continue
+                    out.append([tag, TOKEN_RE.sub("•••", f.path)[:200], int(sz)])
+            except Exception:
+                pass
+    return out[:400]
+
+
 def main():
     hb = rd("heartbeat.json", {}) or {}
     focus = (rd("snap/jobs/FOCUS", "", text=True) or "").strip()[:80]
@@ -56,7 +82,12 @@ def main():
         "led": {"day": led.get("day"), "d": {k: v for k, v in (led.get("d") or {}).items() if isinstance(v, (int, float))}},
         "hand": [l for l in hand.splitlines() if l.startswith("- ")][-8:],
     }
-    json.dump(scrub(out), sys.stdout, ensure_ascii=False, separators=(",", ":"))
+    out = scrub(out)
+    try:
+        out["files"] = files(focus)   # scrub-এর পরে: লম্বা পথ যেন "চাবি-সদৃশ" বলে কাটা না পড়ে
+    except Exception:
+        out["files"] = []
+    json.dump(out, sys.stdout, ensure_ascii=False, separators=(",", ":"))
 
 
 if __name__ == "__main__":

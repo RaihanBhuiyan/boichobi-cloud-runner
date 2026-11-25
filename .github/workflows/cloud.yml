@@ -54,6 +54,17 @@ jobs:
           path: proj
           fetch-depth: 1
       - if: steps.gate.outputs.run == '1'
+        # ২০২৬-১১-২৫: প্যানেলের আদেশ (panel/cmd/*.json) — private `panel` ব্রাঞ্চ; না থাকলেও লাইন চলে
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: RaihanBhuiyan/boier-golpo
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          ref: panel
+          path: pnl
+          fetch-depth: 1
+          sparse-checkout: panel
+      - if: steps.gate.outputs.run == '1'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-core >/dev/null
           pip install -q "kaggle>=1.8" six requests pillow numpy
@@ -68,7 +79,7 @@ jobs:
           restore-keys: media-
       - if: steps.gate.outputs.run == '1'
         working-directory: proj
-        run: CLOUD_MEDIA_CACHE=$HOME/.cache/boichobi-media python scripts/cloud_tick.py
+        run: PANEL_DIR=$GITHUB_WORKSPACE/pnl CLOUD_MEDIA_CACHE=$HOME/.cache/boichobi-media python scripts/cloud_tick.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
