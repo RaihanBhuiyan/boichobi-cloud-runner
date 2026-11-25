@@ -82,6 +82,14 @@ def main():
         "led": {"day": led.get("day"), "d": {k: v for k, v in (led.get("d") or {}).items() if isinstance(v, (int, float))}},
         "hand": [l for l in hand.splitlines() if l.startswith("- ")][-8:],
     }
+    # ধাপ: স্টেট-ফাইলের `step` পিসির লেখা — অনলাইন এগিয়ে গেলে পুরনো থাকে (গল্প ৮: render চলছে, দেখাত build)। লিজের ধাপ এগিয়ে থাকলে সেটাই।
+    try:
+        order = ["script", "script_review", "package", "package_audit", "owner_ok", "voice", "voice_clean", "build", "storyboard", "render", "finish", "checks", "audit", "draft_tg", "publish", "teaser", "done"]
+        ls, ss = out["lease"].get("step"), out["state"].get("step")
+        if ls in order and (ss not in order or order.index(ls) > order.index(ss)):
+            out["state"]["step"] = ls
+    except Exception:
+        pass
     out = scrub(out)
     try:
         out["files"] = files(focus)   # scrub-এর পরে: লম্বা পথ যেন "চাবি-সদৃশ" বলে কাটা না পড়ে
