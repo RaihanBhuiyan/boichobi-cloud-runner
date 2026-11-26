@@ -97,6 +97,14 @@ def main():
     except Exception:
         pass
     out = scrub(out)
+    try:   # Owner ২০২৬-১১-২৬: ধাপের ফল Drive-এ লিংকে-দেখা (stage_share.py) — শুধু Drive-লিংক, চাবি নয়
+        lk = rd(f"snap/jobs/{focus}/stage_links.json", {}) if focus else {}
+        out["links"] = {st: [{"name": str(r.get("name", ""))[:160], "url": r["url"], "size": int(r.get("size", 0)), "t": r.get("t", "")}
+                             for r in rows if isinstance(r, dict) and str(r.get("url", "")).startswith("https://drive.google.com/file/d/")][:8]
+                        for st, rows in (lk or {}).items() if isinstance(rows, list) and not st.startswith("_")}
+        out["links_pending"] = (lk or {}).get("_pending", [])[:20]
+    except Exception:
+        out["links"] = {}
     try:
         out["files"] = files(focus)   # scrub-এর পরে: লম্বা পথ যেন "চাবি-সদৃশ" বলে কাটা না পড়ে
     except Exception:
