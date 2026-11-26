@@ -107,6 +107,24 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_GROUP_ID: ${{ secrets.TELEGRAM_GROUP_ID }}
+      - name: স্টোরিবোর্ড-শিট → private panel ব্রাঞ্চ (অনলাইন-চ্যাট যাতে Owner-কে চ্যাটেই দেখাতে পারে)
+        # ২০২৬-১১-২৬ (Owner "Ebar amk soarasori dekhaba", পিসি ৩ দিন নেই): Drive অনলাইন-চ্যাট থেকে পড়া যায় না।
+        # শুধু সর্বশেষ দফার শিট (ভিডিও নয়), private রিপোতে; ডিপ্লয়-চাবির লেখার অনুমতি না থাকলে চুপচাপ বাদ — লাইন থামে না।
+        if: always() && steps.gate.outputs.run == '1'
+        continue-on-error: true
+        run: |
+          cd "$GITHUB_WORKSPACE/pnl" 2>/dev/null || { echo "sheets: pnl নেই"; exit 0; }
+          last=$(find "$GITHUB_WORKSPACE/proj/jobs" "$HOME/.cache/boichobi-media" -path '*/review/storyboard_m*_[0-9][0-9].jpg' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+          [ -n "$last" ] || { echo "sheets: শিট নেই"; exit 0; }
+          rd=$(dirname "$last"); ep=$(basename "$(dirname "$rd")")
+          tag=$(basename "$last" | sed -E 's/^storyboard_(m[0-9]+)_.*/\1/')
+          mkdir -p panel/sheets && rm -f panel/sheets/*.jpg
+          cp "$rd"/storyboard_${tag}_[0-9][0-9].jpg panel/sheets/
+          echo "$ep $tag $(date -u +%FT%TZ)" > panel/sheets/INFO.txt
+          git add -A panel/sheets
+          git diff --cached --quiet -- '*.jpg' && { echo "sheets: বদল নেই ($tag)"; exit 0; }
+          git -c user.name="cloud-assistant" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "sheets $ep $tag"
+          git push -q origin HEAD:panel && echo "sheets ✔ $ep $tag" || echo "sheets: পুশ যায়নি (চাবি শুধু-পড়া?)"
       - name: প্যানেলের অবস্থা-ফাইল (শেষে)
         if: always() && inputs.test_state != true
         continue-on-error: true
