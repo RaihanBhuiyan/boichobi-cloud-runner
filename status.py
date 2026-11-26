@@ -98,7 +98,7 @@ def main():
         pass
     try:   # Owner ২০২৬-১১-২৬ "proper update": গেটের মাপা সংখ্যা (পর্দা/মিনিট, পুনরাবৃত্তি, প্রাণ-স্কোর) প্যানেলে/চ্যাটে — আগে শুধু private night.log-এ ছিল
         nl = (rd(f"snap/jobs/{focus}/night.log", "", text=True) or "").splitlines() if focus else []
-        out["gate"] = [l for l in nl if "গেট" in l or "চুক্তি" in l or "পট-রং" in l][-8:]
+        out["gate"] = [l for l in nl if any(k in l for k in ("গেট", "চুক্তি", "পট-রং", "video_build", "Gemini-বিকল্প", "build:"))][-14:]
         mf = (rd(f"snap/jobs/{focus}/owner_feedback_motion.md", "", text=True) or "") if focus else ""
         out["motion"] = [mf[i:i + 380] for i in range(0, min(len(mf), 1900), 380)]
     except Exception:
